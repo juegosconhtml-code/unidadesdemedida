@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MétricaAventura - Juego de Conversión de Longitudes (5º Primaria)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    h1, h2, h3, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Keyframe Animations */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.92) translateY(6px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop-in {
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
+    }
+    .glow-target {
+      animation: pulseGlow 1.8s infinite;
+    }
+
+    /* Custom Scrollbar for unit scale */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 4px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 9999px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 9999px;
+    }
+
+    /* Compact Touch Numpad buttons */
+    .numpad-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      background-color: rgba(30, 41, 59, 0.9);
+      color: #ffffff;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      transition: all 0.12s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0.4rem 0;
+    }
+    .numpad-btn:hover {
+      background-color: rgba(51, 65, 85, 1);
+      border-color: rgba(100, 116, 139, 1);
+    }
+    .numpad-btn:active {
+      transform: scale(0.93);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col justify-between select-none p-1.5 md:p-2.5 h-[100dvh]">
+
+  <!-- Canvas Overlay for Confetti -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <div class="w-full max-w-6xl mx-auto flex flex-col h-full justify-between gap-1.5 md:gap-2">
+
+    <!-- 1. Ultra-Compact Header Navbar -->
+    <header class="bg-slate-900/90 border border-slate-800 rounded-2xl px-3 py-1.5 shadow-lg backdrop-blur-md flex items-center justify-between gap-2 shrink-0">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-lg shadow-md shadow-indigo-500/30">
+          📐
+        </div>
+        <div>
+          <h1 class="text-base md:text-lg font-extrabold text-white tracking-tight leading-none flex items-center gap-1.5">
+            Métrica<span class="text-indigo-400">Aventura</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hidden sm:inline">5º Primaria</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="flex items-center gap-2 bg-slate-950/80 px-2.5 py-1 rounded-xl border border-slate-800">
+        <!-- Points -->
+        <div class="flex items-center gap-1 text-xs">
+          <span>⭐</span>
+          <span class="text-[10px] text-amber-400/90 font-bold uppercase hidden md:inline">Puntos:</span>
+          <span id="score-val" class="font-black text-amber-300">0</span>
+        </div>
+
+        <div class="h-3 w-px bg-slate-800"></div>
+
+        <!-- Streak -->
+        <div class="flex items-center gap-1 text-xs">
+          <span>🔥</span>
+          <span class="text-[10px] text-rose-400/90 font-bold uppercase hidden md:inline">Racha:</span>
+          <span id="streak-val" class="font-black text-rose-400">0</span>
+        </div>
+
+        <div class="h-3 w-px bg-slate-800"></div>
+
+        <!-- Counter -->
+        <div class="flex items-center gap-1 text-xs">
+          <span>🎯</span>
+          <span id="count-val" class="font-black text-teal-300">0/0</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-sound-toggle" title="Activar/Desactivar Sonido" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm active:scale-95 transition-all">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-finish-game" class="px-2.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-bold text-xs uppercase tracking-wide active:scale-95 transition-all flex items-center gap-1">
+          <span>🏁 Terminar</span>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- 2. Compact Scale Section (Km -> mm) -->
+    <section class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-2 shadow-lg backdrop-blur-md shrink-0">
+      <!-- Scale Header & Jump Explanation -->
+      <div class="flex items-center justify-between gap-2 mb-1 px-1 text-[11px] font-semibold text-slate-300">
+        <div class="flex items-center gap-1.5 text-indigo-300">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+          <span class="font-bold uppercase tracking-wider text-[10px] md:text-xs">Escala de Unidades (×10 / :10)</span>
+        </div>
+        <div id="step-explanation-banner" class="text-[11px] text-right font-medium text-slate-300 truncate">
+          Cargando escala...
+        </div>
+      </div>
+
+      <!-- Scrollable Scale Units Container -->
+      <div class="overflow-x-auto scrollbar-thin py-0.5">
+        <div id="units-scale-container" class="flex items-center justify-between min-w-[620px] gap-0.5">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Dynamic Flexible Workspace (Question Card + Touch Numpad) -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 flex-1 min-h-0 items-stretch">
+
+      <!-- Left Column: Current Exercise & Dynamic Feedback (Md: 7 cols) -->
+      <section class="md:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 md:p-4 shadow-lg backdrop-blur-md flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- Background accents -->
+        <div class="absolute -top-16 -left-16 w-40 h-40 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute -bottom-16 -right-16 w-40 h-40 bg-teal-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div>
+          <!-- Difficulty & Info -->
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+              Ejercicio
+            </span>
+            <span id="question-difficulty-badge" class="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+              Decimales / Enteros
+            </span>
+          </div>
+
+          <!-- Question Central Display -->
+          <div id="question-box" class="bg-slate-950/80 rounded-xl p-3.5 md:p-5 border border-slate-800 shadow-inner flex flex-col items-center justify-center my-1 text-center transition-all">
+            <div class="text-xs font-semibold text-slate-400 mb-1.5">Convierte la siguiente cantidad:</div>
+            
+            <div class="flex flex-wrap items-center justify-center gap-2 text-xl sm:text-2xl md:text-3xl font-extrabold text-white">
+              <!-- Value From -->
+              <div class="bg-indigo-950/90 border border-indigo-500/40 text-indigo-200 px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                <span id="q-val-from">1,25</span>
+                <span id="q-unit-from" class="text-indigo-400 font-black text-lg md:text-xl">m</span>
+              </div>
+
+              <!-- Arrow -->
+              <span class="text-slate-500 text-lg animate-pulse">➔</span>
+
+              <!-- Value To Target -->
+              <div class="bg-emerald-950/90 border border-emerald-500/40 text-emerald-200 px-3.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                <span class="text-slate-400 font-normal">¿?</span>
+                <span id="q-unit-to" class="text-emerald-400 font-black text-lg md:text-xl">hm</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback Alert & Help Action -->
+        <div class="mt-2 flex flex-col gap-2">
+          <div id="feedback-alert" class="hidden p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 animate-pop-in">
+            <span id="feedback-icon" class="text-lg">💡</span>
+            <div id="feedback-msg" class="flex-1 leading-snug"></div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <button id="btn-show-help" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white font-bold text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95">
+              <span>💡 Ayuda Paso a Paso</span>
+            </button>
+            <span class="text-[10px] text-slate-500 hidden sm:inline">Usa la coma (,) para decimales</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: User Input & Touch Numpad (Md: 5 cols) -->
+      <section class="md:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-lg backdrop-blur-md flex flex-col justify-between gap-2">
+        
+        <!-- Input Display Field -->
+        <div>
+          <div class="flex items-center justify-between mb-1 px-0.5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Escribe Tu Respuesta:
+            </label>
+          </div>
+          <div id="input-display-container" class="bg-slate-950 border-2 border-indigo-500/60 focus-within:border-indigo-400 rounded-xl px-3 py-1.5 shadow-inner flex items-center justify-between h-12 transition-all">
+            <div class="flex items-center gap-1 overflow-x-auto scrollbar-thin flex-1">
+              <span id="user-input-text" class="text-2xl md:text-3xl font-extrabold text-white tracking-wider"></span>
+              <span id="input-cursor" class="w-0.5 h-6 bg-indigo-400 animate-pulse rounded-full"></span>
+            </div>
+            <span id="target-unit-tag" class="text-sm font-black text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-lg ml-2">
+              hm
+            </span>
+          </div>
+        </div>
+
+        <!-- Touch Numpad Grid -->
+        <div class="grid grid-cols-3 gap-1.5 max-w-xs mx-auto w-full my-auto">
+          <button class="numpad-btn" data-key="7">7</button>
+          <button class="numpad-btn" data-key="8">8</button>
+          <button class="numpad-btn" data-key="9">9</button>
+
+          <button class="numpad-btn" data-key="4">4</button>
+          <button class="numpad-btn" data-key="5">5</button>
+          <button class="numpad-btn" data-key="6">6</button>
+
+          <button class="numpad-btn" data-key="1">1</button>
+          <button class="numpad-btn" data-key="2">2</button>
+          <button class="numpad-btn" data-key="3">3</button>
+
+          <button class="numpad-btn bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30" data-key=",">,</button>
+          <button class="numpad-btn" data-key="0">0</button>
+          <button class="numpad-btn bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30" data-key="backspace" title="Borrar uno">⌫</button>
+
+          <button class="numpad-btn bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 text-xs font-bold" data-key="clear">Borrar</button>
+          <button id="btn-submit" class="col-span-2 py-2 px-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <span>COMPROBAR</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+          </button>
+        </div>
+
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Modal Help -->
+  <div id="modal-help" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl relative animate-pop-in">
+      <button id="btn-close-help" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1 text-lg font-bold">✕</button>
+
+      <div class="flex items-center gap-2.5 mb-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-lg font-bold">
+          💡
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-white">Explicación Paso a Paso</h3>
+          <p class="text-[11px] text-slate-400">Paso a paso de la conversión</p>
+        </div>
+      </div>
+
+      <div id="help-modal-body" class="space-y-2 text-xs text-slate-200">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+        <button id="btn-modal-gotit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95">
+          ¡Entendido! Volver
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal End Game Summary -->
+  <div id="modal-summary" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center relative animate-pop-in">
+      
+      <div id="summary-trophy" class="text-5xl mb-1 animate-bounce">🏆</div>
+      <h2 id="summary-title" class="text-xl font-black text-white mb-0.5">¡Gran Trabajo!</h2>
+      <p id="summary-subtitle" class="text-xs text-slate-400 mb-4">Resumen de tu sesión</p>
+
+      <div class="grid grid-cols-2 gap-2 mb-4 text-left">
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Puntos</div>
+          <div id="sum-score" class="text-xl font-black text-amber-400">0</div>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Precisión</div>
+          <div id="sum-accuracy" class="text-xl font-black text-emerald-400">100%</div>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Aciertos</div>
+          <div id="sum-correct" class="text-base font-extrabold text-teal-300">0 / 0</div>
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Máx. Racha</div>
+          <div id="sum-streak" class="text-base font-extrabold text-rose-400">0 🔥</div>
+        </div>
+      </div>
+
+      <button id="btn-restart-game" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-extrabold text-sm shadow-md transition-all active:scale-95">
+        🔄 Jugar Otra Vez
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ===================================================================
+       1. DATA & CONSTANTS
+       =================================================================== */
+    const UNITS = [
+      { key: 'km', name: 'Kilómetro', symbol: 'km', power: 3 },
+      { key: 'hm', name: 'Hectómetro', symbol: 'hm', power: 2 },
+      { key: 'dam', name: 'Decámetro', symbol: 'dam', power: 1 },
+      { key: 'm', name: 'Metro', symbol: 'm', power: 0 },
+      { key: 'dm', name: 'Decímetro', symbol: 'dm', power: -1 },
+      { key: 'cm', name: 'Centímetro', symbol: 'cm', power: -2 },
+      { key: 'mm', name: 'Milímetro', symbol: 'mm', power: -3 }
+    ];
+
+    /* ===================================================================
+       2. AUDIO SYNTHESIZER (Web Audio API)
+       =================================================================== */
+    class SoundFx {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+      }
+      playKey() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.04);
+        } catch(e){}
+      }
+      playCorrect() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.06);
+            gain.gain.setValueAtTime(0.1, this.ctx.currentTime + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.06 + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(this.ctx.currentTime + idx * 0.06);
+            osc.stop(this.ctx.currentTime + idx * 0.06 + 0.2);
+          });
+        } catch(e){}
+      }
+      playError() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.22);
+          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.22);
+        } catch(e){}
+      }
+    }
+    const sound = new SoundFx();
+
+    /* ===================================================================
+       3. CONFETTI ENGINE
+       =================================================================== */
+    class ConfettiEngine {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.animId = null;
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+      }
+      resize() {
+        if (this.canvas) {
+          this.canvas.width = window.innerWidth;
+          this.canvas.height = window.innerHeight;
+        }
+      }
+      fire() {
+        this.particles = [];
+        const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+        for (let i = 0; i < 70; i++) {
+          this.particles.push({
+            x: this.canvas.width / 2 + (Math.random() * 140 - 70),
+            y: this.canvas.height * 0.45,
+            vx: (Math.random() - 0.5) * 14,
+            vy: (Math.random() - 0.7) * 12 - 3,
+            size: Math.random() * 7 + 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 10,
+            opacity: 1
+          });
+        }
+        if (!this.animId) {
+          this.animate();
+        }
+      }
+      animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let active = false;
+        for (let p of this.particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35;
+          p.vx *= 0.98;
+          p.rotation += p.vRot;
+          p.opacity -= 0.01;
+
+          if (p.opacity > 0 && p.y < this.canvas.height + 20) {
+            active = true;
+            this.ctx.save();
+            this.ctx.globalAlpha = Math.max(0, p.opacity);
+            this.ctx.translate(p.x, p.y);
+            this.ctx.rotate((p.rotation * Math.PI) / 180);
+            this.ctx.fillStyle = p.color;
+            this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+            this.ctx.restore();
+          }
+        }
+        if (active) {
+          this.animId = requestAnimationFrame(() => this.animate());
+        } else {
+          this.animId = null;
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+      }
+    }
+    const confetti = new ConfettiEngine('confetti-canvas');
+
+    /* ===================================================================
+       4. PRECISE STRING ARITHMETIC ENGINE
+       =================================================================== */
+    function preciseShift(numStr, shift) {
+      let s = numStr.toString().trim().replace(',', '.');
+      let [intP, fracP = ''] = s.split('.');
+
+      intP = intP.replace(/^0+/, '');
+      if (!intP) intP = '0';
+
+      let fullDigits = intP + fracP;
+      let originalDotPos = intP.length;
+      let newDotPos = originalDotPos + shift;
+
+      if (newDotPos <= 0) {
+        let zerosNeeded = Math.abs(newDotPos);
+        fullDigits = '0'.repeat(zerosNeeded + 1) + fullDigits;
+        newDotPos = 1;
+      } else if (newDotPos > fullDigits.length) {
+        let zerosNeeded = newDotPos - fullDigits.length;
+        fullDigits = fullDigits + '0'.repeat(zerosNeeded);
+      }
+
+      let resInt = fullDigits.slice(0, newDotPos);
+      let resFrac = fullDigits.slice(newDotPos);
+
+      resFrac = resFrac.replace(/0+$/, '');
+      resInt = resInt.replace(/^0+/, '');
+      if (!resInt) resInt = '0';
+
+      if (resFrac.length > 0) {
+        return resInt + ',' + resFrac;
+      }
+      return resInt;
+    }
+
+    function normalizeNumberStr(str) {
+      if (!str) return '';
+      let s = str.trim().replace('.', ',');
+      let [intP, fracP = ''] = s.split(',');
+
+      intP = intP.replace(/^0+/, '');
+      if (!intP) intP = '0';
+      fracP = fracP.replace(/0+$/, '');
+
+      if (fracP.length > 0) {
+        return intP + ',' + fracP;
+      }
+      return intP;
+    }
+
+    /* ===================================================================
+       5. GAME STATE & LOGIC
+       =================================================================== */
+    let gameState = {
+      score: 0,
+      streak: 0,
+      maxStreak: 0,
+      totalAnswered: 0,
+      totalCorrect: 0,
+      currentQuestion: null,
+      userInput: '',
+      hasAnsweredCurrent: false
+    };
+
+    function generateQuestion() {
+      const units = ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'];
+      let fromIdx = Math.floor(Math.random() * 7);
+      let toIdx;
+      do {
+        toIdx = Math.floor(Math.random() * 7);
+      } while (toIdx === fromIdx);
+
+      const type = Math.floor(Math.random() * 4);
+      let baseValStr = '';
+
+      if (type === 0) {
+        const list = [100, 200, 300, 500, 800, 1200, 2500, 3400, 4000, 5000, 7500, 10000, 60000];
+        baseValStr = list[Math.floor(Math.random() * list.length)].toString();
+      } else if (type === 1) {
+        const list = [2, 4, 5, 7, 8, 9, 12, 15, 24, 36, 45, 68, 75, 84, 96];
+        baseValStr = list[Math.floor(Math.random() * list.length)].toString();
+      } else if (type === 2) {
+        const list = ["1,25", "6,2", "0,45", "3,8", "14,5", "2,75", "0,8", "9,4", "15,2"];
+        baseValStr = list[Math.floor(Math.random() * list.length)];
+      } else {
+        const list = ["0,08", "0,15", "0,05", "0,25", "0,004", "0,6"];
+        baseValStr = list[Math.floor(Math.random() * list.length)];
+      }
+
+      const shift = toIdx - fromIdx;
+      const answerStr = preciseShift(baseValStr, shift);
+
+      return {
+        fromUnit: units[fromIdx],
+        toUnit: units[toIdx],
+        fromIdx: fromIdx,
+        toIdx: toIdx,
+        valueStr: baseValStr,
+        answerStr: answerStr,
+        shift: shift,
+        type: type
+      };
+    }
+
+    /* ===================================================================
+       6. RENDERERS
+       =================================================================== */
+    function renderScale() {
+      const container = document.getElementById('units-scale-container');
+      const q = gameState.currentQuestion;
+      container.innerHTML = '';
+
+      UNITS.forEach((unit, idx) => {
+        const isFrom = q && idx === q.fromIdx;
+        const isTo = q && idx === q.toIdx;
+        const isInPath = q && (
+          (idx >= q.fromIdx && idx <= q.toIdx) ||
+          (idx <= q.fromIdx && idx >= q.toIdx)
+        );
+
+        const card = document.createElement('div');
+        let cardBg = 'bg-slate-950 border-slate-800 text-slate-400';
+        let badgeHtml = '';
+
+        if (isFrom) {
+          cardBg = 'bg-indigo-950/90 border-indigo-500 text-white shadow-md ring-2 ring-indigo-500/50';
+          badgeHtml = `<span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-indigo-500 text-slate-950 font-black text-[8px] px-1.5 py-0.1 rounded-full uppercase tracking-wider">INICIO</span>`;
+        } else if (isTo) {
+          cardBg = 'bg-emerald-950/90 border-emerald-500 text-white shadow-md ring-2 ring-emerald-500/50 glow-target';
+          badgeHtml = `<span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-400 text-slate-950 font-black text-[8px] px-1.5 py-0.1 rounded-full uppercase tracking-wider">DESTINO</span>`;
+        } else if (isInPath) {
+          cardBg = 'bg-slate-900 border-indigo-700/60 text-indigo-200';
+        }
+
+        card.className = `relative flex-1 flex flex-col items-center justify-center p-1.5 rounded-xl border transition-all ${cardBg}`;
+        card.innerHTML = `
+          ${badgeHtml}
+          <div class="text-sm md:text-base font-black leading-none">${unit.symbol}</div>
+          <div class="text-[9px] font-semibold opacity-75 mt-0.5 hidden sm:block">${unit.name}</div>
+        `;
+
+        container.appendChild(card);
+
+        if (idx < UNITS.length - 1) {
+          const arrow = document.createElement('div');
+          const isRightPath = q && q.shift > 0 && idx >= q.fromIdx && idx < q.toIdx;
+          const isLeftPath = q && q.shift < 0 && idx <= q.fromIdx && idx > q.toIdx;
+
+          let arrowStyle = 'text-slate-700';
+          let label = '×10 →';
+
+          if (isRightPath) {
+            arrowStyle = 'text-emerald-400 font-bold scale-105';
+            label = '×10 →';
+          } else if (isLeftPath) {
+            arrowStyle = 'text-indigo-400 font-bold scale-105';
+            label = '← :10';
+          }
+
+          arrow.className = `flex flex-col items-center justify-center px-0.5 text-[9px] transition-all ${arrowStyle}`;
+          arrow.innerHTML = `<span>${label}</span>`;
+          container.appendChild(arrow);
+        }
+      });
+
+      const banner = document.getElementById('step-explanation-banner');
+      if (q) {
+        const absSteps = Math.abs(q.shift);
+        const factor = Math.pow(10, absSteps).toLocaleString('es-ES');
+        if (q.shift > 0) {
+          banner.innerHTML = `
+            <span class="text-emerald-400">➔ <strong>${absSteps} ${absSteps === 1 ? 'paso' : 'pasos'} a la derecha</strong>:</span>
+            <span>Multiplica por <strong>${factor}</strong></span>
+          `;
+        } else {
+          banner.innerHTML = `
+            <span class="text-indigo-400">⬅️ <strong>${absSteps} ${absSteps === 1 ? 'paso' : 'pasos'} a la izquierda</strong>:</span>
+            <span>Divide entre <strong>${factor}</strong></span>
+          `;
+        }
+      }
+    }
+
+    function updateScoreboard() {
+      document.getElementById('score-val').textContent = gameState.score;
+      document.getElementById('streak-val').textContent = gameState.streak;
+      document.getElementById('count-val').textContent = `${gameState.totalCorrect}/${gameState.totalAnswered}`;
+    }
+
+    function renderQuestion() {
+      const q = gameState.currentQuestion;
+      if (!q) return;
+
+      document.getElementById('q-val-from').textContent = q.valueStr;
+      document.getElementById('q-unit-from').textContent = q.fromUnit;
+      document.getElementById('q-unit-to').textContent = q.toUnit;
+      document.getElementById('target-unit-tag').textContent = q.toUnit;
+
+      const typesMap = ['Entero con ceros', 'Entero', 'Decimal', 'Decimal pequeño'];
+      document.getElementById('question-difficulty-badge').textContent = typesMap[q.type] || 'Conversión';
+
+      gameState.userInput = '';
+      gameState.hasAnsweredCurrent = false;
+      updateInputDisplay();
+      hideFeedback();
+      renderScale();
+    }
+
+    function updateInputDisplay() {
+      document.getElementById('user-input-text').textContent = gameState.userInput;
+    }
+
+    function showFeedback(isSuccess, title, msg) {
+      const box = document.getElementById('feedback-alert');
+      const icon = document.getElementById('feedback-icon');
+      const msgContainer = document.getElementById('feedback-msg');
+
+      box.classList.remove('hidden', 'bg-emerald-950/80', 'border-emerald-500/50', 'text-emerald-200', 'bg-rose-950/80', 'border-rose-500/50', 'text-rose-200');
+
+      if (isSuccess) {
+        box.classList.add('bg-emerald-950/80', 'border-emerald-500/50', 'text-emerald-200');
+        icon.textContent = '🎉';
+      } else {
+        box.classList.add('bg-rose-950/80', 'border-rose-500/50', 'text-rose-200');
+        icon.textContent = '❌';
+      }
+
+      msgContainer.innerHTML = `<strong>${title}</strong> ${msg}`;
+    }
+
+    function hideFeedback() {
+      document.getElementById('feedback-alert').classList.add('hidden');
+    }
+
+    /* ===================================================================
+       7. HANDLERS
+       =================================================================== */
+    function handleKeyPress(key) {
+      sound.playKey();
+
+      if (key === 'clear') {
+        gameState.userInput = '';
+      } else if (key === 'backspace') {
+        gameState.userInput = gameState.userInput.slice(0, -1);
+      } else if (key === ',') {
+        if (!gameState.userInput.includes(',')) {
+          if (gameState.userInput === '') {
+            gameState.userInput = '0,';
+          } else {
+            gameState.userInput += ',';
+          }
+        }
+      } else if (/^[0-9]$/.test(key)) {
+        if (gameState.userInput.length < 12) {
+          gameState.userInput += key;
+        }
+      }
+
+      updateInputDisplay();
+    }
+
+    function checkAnswer() {
+      if (!gameState.userInput.trim()) return;
+
+      const q = gameState.currentQuestion;
+      const normalizedUser = normalizeNumberStr(gameState.userInput);
+      const normalizedCorrect = normalizeNumberStr(q.answerStr);
+
+      gameState.totalAnswered++;
+
+      if (normalizedUser === normalizedCorrect) {
+        sound.playCorrect();
+        confetti.fire();
+
+        gameState.score += 100 + (gameState.streak * 15);
+        gameState.streak++;
+        if (gameState.streak > gameState.maxStreak) {
+          gameState.maxStreak = gameState.streak;
+        }
+        gameState.totalCorrect++;
+
+        const msgs = ['¡Excelente! 🌟', '¡Muy bien! 🎯', '¡Imparable! 💪'];
+        const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+        
+        showFeedback(true, '¡Correcto!', `${q.valueStr} ${q.fromUnit} = **${q.answerStr} ${q.toUnit}**. ${randomMsg}`);
+
+        const qBox = document.getElementById('question-box');
+        qBox.classList.add('ring-2', 'ring-emerald-500/50');
+        setTimeout(() => qBox.classList.remove('ring-2', 'ring-emerald-500/50'), 500);
+
+        updateScoreboard();
+
+        setTimeout(() => {
+          gameState.currentQuestion = generateQuestion();
+          renderQuestion();
+        }, 1600);
+
+      } else {
+        sound.playError();
+        gameState.streak = 0;
+        updateScoreboard();
+
+        showFeedback(false, '¡Casi!', `Has puesto ${gameState.userInput} ${q.toUnit}. Revisa la escala superior o pulsa en Ayuda.`);
+
+        const qBox = document.getElementById('question-box');
+        qBox.classList.add('animate-shake', 'ring-2', 'ring-rose-500/50');
+        setTimeout(() => qBox.classList.remove('animate-shake', 'ring-2', 'ring-rose-500/50'), 450);
+      }
+    }
+
+    /* ===================================================================
+       8. MODALS
+       =================================================================== */
+    function openHelpModal() {
+      const q = gameState.currentQuestion;
+      if (!q) return;
+
+      const absSteps = Math.abs(q.shift);
+      const factor = Math.pow(10, absSteps).toLocaleString('es-ES');
+      const isRight = q.shift > 0;
+
+      const modalBody = document.getElementById('help-modal-body');
+      modalBody.innerHTML = `
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase">1º Origen y Destino</div>
+          <div>De <strong>${q.valueStr} ${q.fromUnit}</strong> a <strong>${q.toUnit}</strong>.</div>
+        </div>
+
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase">2º Dirección en la tabla</div>
+          <div>Hay <strong>${absSteps} ${absSteps === 1 ? 'paso' : 'pasos'}</strong> hacia la <strong>${isRight ? 'DERECHA (multiplicar)' : 'IZQUIERDA (dividir)'}</strong>.</div>
+        </div>
+
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="text-[10px] text-indigo-400 font-bold uppercase">3º Operación</div>
+          <div>
+            ${isRight 
+              ? `Multiplica por <strong>${factor}</strong> (mueve la coma ${absSteps} sitios a la derecha).` 
+              : `Divide entre <strong>${factor}</strong> (mueve la coma ${absSteps} sitios a la izquierda).`}
+          </div>
+        </div>
+
+        <div class="bg-emerald-950/80 p-3 rounded-xl border border-emerald-500/40 text-emerald-200">
+          <div class="text-[10px] text-emerald-400 font-bold uppercase mb-0.5">Resultado Correcto:</div>
+          <div class="text-lg font-extrabold text-white">${q.valueStr} ${q.fromUnit} = <span class="text-emerald-400">${q.answerStr} ${q.toUnit}</span></div>
+        </div>
+      `;
+
+      document.getElementById('modal-help').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      document.getElementById('modal-help').classList.add('hidden');
+    }
+
+    function showSummaryModal() {
+      const total = gameState.totalAnswered;
+      const correct = gameState.totalCorrect;
+      const acc = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+      document.getElementById('sum-score').textContent = gameState.score;
+      document.getElementById('sum-accuracy').textContent = `${acc}%`;
+      document.getElementById('sum-correct').textContent = `${correct} / ${total}`;
+      document.getElementById('sum-streak').textContent = `${gameState.maxStreak} 🔥`;
+
+      const trophyEl = document.getElementById('summary-trophy');
+      const titleEl = document.getElementById('summary-title');
+      const subtitleEl = document.getElementById('summary-subtitle');
+
+      if (acc >= 90 && total >= 3) {
+        trophyEl.textContent = '🏆';
+        titleEl.textContent = '¡Maestro de las Medidas!';
+        subtitleEl.textContent = '¡Excelente dominio de las unidades!';
+      } else if (acc >= 75) {
+        trophyEl.textContent = '🌟';
+        titleEl.textContent = '¡Gran Trabajo!';
+        subtitleEl.textContent = '¡Tienes una gran puntería con los decimales!';
+      } else {
+        trophyEl.textContent = '👍';
+        titleEl.textContent = '¡Sigue Entrenando!';
+        subtitleEl.textContent = 'Practica los saltos en la escala superior.';
+      }
+
+      document.getElementById('modal-summary').classList.remove('hidden');
+    }
+
+    function restartGame() {
+      gameState = {
+        score: 0,
+        streak: 0,
+        maxStreak: 0,
+        totalAnswered: 0,
+        totalCorrect: 0,
+        currentQuestion: generateQuestion(),
+        userInput: '',
+        hasAnsweredCurrent: false
+      };
+
+      document.getElementById('modal-summary').classList.add('hidden');
+      updateScoreboard();
+      renderQuestion();
+    }
+
+    /* ===================================================================
+       9. INITIALIZATION
+       =================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      gameState.currentQuestion = generateQuestion();
+      renderQuestion();
+      updateScoreboard();
+
+      document.querySelectorAll('.numpad-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-key');
+          if (key) handleKeyPress(key);
+        });
+      });
+
+      document.getElementById('btn-submit').addEventListener('click', checkAnswer);
+
+      window.addEventListener('keydown', (e) => {
+        if (!document.getElementById('modal-summary').classList.contains('hidden')) return;
+        if (!document.getElementById('modal-help').classList.contains('hidden')) {
+          if (e.key === 'Escape' || e.key === 'Enter') closeHelpModal();
+          return;
+        }
+
+        if (e.key >= '0' && e.key <= '9') {
+          handleKeyPress(e.key);
+        } else if (e.key === ',' || e.key === '.') {
+          handleKeyPress(',');
+        } else if (e.key === 'Backspace') {
+          handleKeyPress('backspace');
+        } else if (e.key === 'Delete' || e.key === 'c' || e.key === 'C') {
+          handleKeyPress('clear');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          checkAnswer();
+        }
+      });
+
+      document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+        const isEnabled = sound.toggle();
+        document.getElementById('sound-icon').textContent = isEnabled ? '🔊' : '🔇';
+      });
+
+      document.getElementById('btn-show-help').addEventListener('click', openHelpModal);
+      document.getElementById('btn-close-help').addEventListener('click', closeHelpModal);
+      document.getElementById('btn-modal-gotit').addEventListener('click', closeHelpModal);
+
+      document.getElementById('btn-finish-game').addEventListener('click', showSummaryModal);
+      document.getElementById('btn-restart-game').addEventListener('click', restartGame);
+    });
+  </script>
+</body>
+</html>
